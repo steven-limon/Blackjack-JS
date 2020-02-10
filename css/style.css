@@ -1,0 +1,26 @@
+div {
+    display: flex;
+    flex-direction: column;
+}
+
+#human {
+    background-color: #00af00;
+}
+
+#ai {
+    background-color: #c40a22;
+}
+
+.hand {
+    display: flex;
+    flex-direction: row;
+}
+
+.card {
+    text-align: center;
+    height: 200px;
+    width: 100px;
+    border-radius: 25px;
+    padding: 122px;
+    background: #fff;
+}
