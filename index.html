@@ -8,13 +8,28 @@
     </head>
     <body>
         <div class="container">
-            <div class="hand" id="ai">
-                <div class="card">4 Spades</div>
-                <div class="card">Q Clubs</div>
+            <div class="field">
+                <div class="hand" id="dealer">
+                    <div class="card" id="showing">4 Spades</div>
+                    <div class="card" id="down">Q Clubs</div>
+                </div>
             </div>
-            <div class="hand" id="human">
-                <div class="card">2Heart</div>
-                <div class="card">10 Diamonds</div>
+
+            <div class="field">
+                <div class="hand" id="human">
+                    <div class="card">2Heart</div>
+                    <div class="card">10 Diamonds</div>
+                </div>
+
+                <div id="controls">
+                    <button id="hit">Hit</button>
+                    <button id="stand">Stand</button>
+                    <button id="double">Double Down</button>
+                    <div id="contextual">
+                        <button id="split">Split</button>
+                        <button id="insurance">Buy Insurance</button>
+                    </div>
+                </div>
             </div>
         </div>
     </body>

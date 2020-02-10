@@ -7,7 +7,7 @@ div {
     background-color: #00af00;
 }
 
-#ai {
+#dealer {
     background-color: #c40a22;
 }
 
@@ -18,9 +18,26 @@ div {
 
 .card {
     text-align: center;
-    height: 200px;
-    width: 100px;
+    height: 50px;
+    width: 5px;
     border-radius: 25px;
-    padding: 122px;
+    padding: 100px;
     background: #fff;
+}
+
+div.card#down {
+    background: black;
+}
+
+div.controls {
+    color: #bbb;
+    border-radius: 50%;
+}
+
+div#contextual {
+    visibility: hidden;
+}
+
+#split {
+    //visibility: visible;
 }
