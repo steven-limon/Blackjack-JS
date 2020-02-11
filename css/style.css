@@ -1,26 +1,37 @@
-div {
+html, body, .container {
+    height: 100%;
+}
+div.container {
     display: flex;
     flex-direction: column;
 }
 
-#human {
+div.field#human {
     background-color: #00af00;
+    flex-basis: 60%;
 }
 
-#dealer {
+div.field#dealer {
     background-color: #c40a22;
+    //flex-basis: 30%;
 }
 
-.hand {
+div.hand {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
+}
+div#human>div.hand {
+    justify-content: center;
 }
 
-.card {
+div.card {
+    border-style: ridge;
+    border-color: black;
     text-align: center;
     height: 50px;
     width: 5px;
-    border-radius: 25px;
+    border-radius: 20px 10px;
     padding: 100px;
     background: #fff;
 }
@@ -28,10 +39,13 @@ div {
 div.card#down {
     background: black;
 }
-
-div.controls {
+#controls {
     color: #bbb;
-    border-radius: 50%;
+    font-size: 60px;
+    //border-radius: 80%;
+    display: flex;
+    justify-content: center;
+
 }
 
 div#contextual {
