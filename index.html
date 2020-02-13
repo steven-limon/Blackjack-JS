@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8"/>
         <title>Document</title>
-        <script src="js/app.js"></script>
+        <script defer src="js/app.js"></script>
         <link href="css/style.css" rel="stylesheet"/>
     </head>
     <body>
@@ -16,7 +16,7 @@
             </div>
 
             <div class="field" id="human">
-                <div class="hand">
+                <div class="hand" id="playerHand">
                     <!-- 
                     <div class="card"></div>
                     <div class="card"></div>
@@ -28,6 +28,8 @@
                     <button id="stand">Stand</button>
                     <button id="double">Double Down</button>
                     <div id="contextual">
+                        <button id="inc">Increase bet</button>
+                        <button id="dec">Decrease bet</button>
                         <button id="split">Split</button>
                         <button id="insurance">Buy Insurance</button>
                     </div>
