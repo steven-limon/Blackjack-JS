@@ -4,7 +4,6 @@ Array.prototype.shuffle = function () {
         [this[i], this[j]] = [this[j], this[i]];
     }
 };
-
 class Card {
     constructor(rank, suit, value) {
         this.rank = rank;
@@ -12,13 +11,13 @@ class Card {
         this.value = value;
     }
 }
-
 class Hand {
     constructor() {
         this.cards = [];
     }
-    addCard(card) {
+    addCard(card, game) {
         this.cards.push(card);
+        game.addCardPlayer(this.cards.length);
     }
     total() {
         let total = 0;
@@ -38,12 +37,20 @@ class Hand {
         return total;
     }
 }
-
 class DealerHand extends Hand {
-    constructor(upCard, holeCard) {
-        super(upCard, holeCard);
+    constructor() {
+        super();
+    }
+    static startingHand(upCard, holeCard) {
         this.upCard = upCard;
         this.holeCard = holeCard;
+    }
+    addCard(card, game) {
+        // dont call super, we want to override addCard function
+        this.cards.push(card);
+        game.addCardDealer(this.cards.length);
+        if (this.cards.length === 2)
+            startingHand(this.cards[0], this.cards[1]);
     }
 }
 
@@ -63,17 +70,19 @@ class Dealer {
         this.hitsUntil = hitsUntil;
     }
     // dealer logic is fixed. it will draw until it hits a (hitsUntil) which is usually 17. A variant of blackjack has the dealer draw on a soft 17 which I will figure out later
-    plays(deck) {
-        if (this.hand.total() < this.hitsUntil)
-            this.hand.addCard(deck.hit());
+    plays(deck, game) {
+        while (this.hand.total() < this.hitsUntil)
+            this.hand.addCard(deck.hit(), game);
     }
 }
 
 class Deck {
     constructor() {
         this.cards = [];
-        for (rank of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'K', 'Q', 'J', 'A']) {
-            for (suit of ['diamonds', 'clubs', 'hearts', 'spades']) {
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'K', 'Q', 'J', 'A'];
+        const suits = ['diamonds', 'clubs', 'hearts', 'spades'];
+        for (const rank of ranks) {
+            for (const suit of suits) {
                 if (this.rank == 'K' || this.rank == 'Q' || this.rank == 'J')
                     this.cards.push(new Card(rank, suit, 10));
                 else if (this.rank == 'A')
@@ -84,30 +93,18 @@ class Deck {
         }
     }
     hit() {
-        return this.deck.pop();
+        return this.cards.pop();
     }
     shuffle() {
         this.cards.shuffle();
     }
 }
 
-// const fullDeck = [];
-// for (rank of ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'K', 'Q', 'J', 'A']) {
-//     for (suit of ['diamonds', 'clubs', 'hearts', 'spades']) {
-//         if (this.rank == 'K' || this.rank == 'Q' || this.rank == 'J')
-//             fullDeck.push(new Card(rank, suit, 10));
-//         else if (this.rank == 'A')
-//             fullDeck.push(new Card(rank, suit, 'ace'));
-//         else
-//             fullDeck.push(new Card(rank, suit, Number(rank)));
-//     }
-// }
-
 const hitsUntil = 17;
 
 const game = {
     playerList: [],
-    computer: new Dealer(new DealerHand(), hitsUntil),
+    dealer: new Dealer(new DealerHand(), hitsUntil),
     botCount: 0,
     bots: [],
     deck: new Deck(),
@@ -116,47 +113,60 @@ const game = {
         // add the player and computer to a list of players to make it easier to iterate when dealing each hand, and also to iterate through other players if I decide to have bots playing at the table.
         // this.shuffle(this.deck);
         this.player.balance = prompt("pick starting balance");
-        this.player.wager = prompt("pick wager");
         //this.deck = fullDeck.slice().shuffle();
         this.playerList.push(this.player);
+        this.setupControls();
         this.round();
     },
-    // logit for ending a turn
+    // logic for ending a turn
     /*
       This might look iffy so I'll refactor the logic a little later. Basically at the end of every round I need to check which of the players busted to display loss for each player at the table on reveal of each hand. for a single player i could skip this logic since the player will know immediately when the win. another tricky thing is that this function shouldn't do anything for a player if they got a blackjack. I could have a flag per player so they dont have to check for bust or check for bust unconditionally regardless of outcome. The main thing though to consider in this function is
     */
     //
     push() {
-        this.balance += this.player.lastWager;
+        this.player.balance += this.player.wager;
     },
     payout() {
         if (this.dealer.hand.total() == 21 && this.player.hand.total() != 21)
             return;
         else if (this.dealer.hand.total() == 21 && this.player.hand.total() == 21)
-            player.push();
-        if (player.total() == 21)
-            player.balance += 1.5 * player.lastWager;
+            // this.player.push();
+            this.push();
+        if (this.player.hand.total() == 21)
+            this.player.balance += 1.5 * this.player.wager;
         else if (this.player.hand.total() > this.dealer.hand.total())
-            this.player.balance += 2 * this.player.lastWager;
+            this.player.balance += 2 * this.player.wager;
     },
-    hitOrBust() {
-        // TODO add an event listener to my button. if they are hit during this function waiting for them then
+    endRound() {
+        this.dealer.plays(this.deck);
+        this.payout();
+        const playerHandNode = document.querySelector('#playerHand');
+        while (playerHandNode.firstChild)
+            playerHandNode.removeChild(playerHandNode.firstChild);
     },
     setupControls() {
-        const hitBtn = document.querySelector('.hit');
-        const standBtn = document.querySelector('.stand');
-        const doubleBtn = document.querySelector('.double');
+        const hitBtn = document.querySelector('#hit');
+        const standBtn = document.querySelector('#stand');
+        const doubleBtn = document.querySelector('#double');
         hitBtn.addEventListener('click', () => {
-            this.player.addCard(this.hit());
+            this.player.addCard(this.deck.hit(), this);
         });
         standBtn.addEventListener('click', () => {
-            this.player.doubleDown(this.hit());
-        });
-        doubleBtn.addEventListener('click', () => {
             this.player.stand = true;
             this.toggleControls('off');
+            // for bots I need to check if the type of a player is a human or bot. when iterating through the player list controls are enabled for the duration of the player turn and some external logic will take care of either proceeding to the dealers play or other bots
             // this.nextPlayer();
-            this.dealer.plays(this.deck);
+            // dealerPlays();
+            // displayBusts();
+            // add some timers so the game doesnt just instantly end
+            this.endRound();
+        });
+        doubleBtn.addEventListener('click', () => {
+            this.player.addCard(this.deck.hit(), game);
+            this.toggleControls('off');
+            this.player.wager *= 2;
+            this.endRound();
+            // this.player.doubleDown();
         });
     },
     toggleControls(choice) {
@@ -165,48 +175,60 @@ const game = {
             state = false;
         else
             state = true;
-        const hitBtn = document.querySelector('.hit');
-        const standBtn = document.querySelector('.stand');
-        const doubleBtn = document.querySelector('.double');
+        const hitBtn = document.querySelector('#hit');
+        const standBtn = document.querySelector('#stand');
+        const doubleBtn = document.querySelector('#double');
 
         hitBtn.disabled = state;
         standBtn.disabled = state;
-        Btn.disabled = state;
+        doubleBtn.disabled = state;
     },
     startPlayerTurn() {
         this.player.stand = false;
-        toggleControls('on');
-        if (this.player.stand)
-            console.log('idk');
-            // this.player.disableControls();
-        // think of a better name for the below function. a user turn consists of hits until stand of bust.
-        hitOrBust();
+        this.toggleControls('on');
     },
     // I need to get rid of the game loop the way I have it since this will cause the browser to hang. THe correct way to do a js game with distinct phases is to not have a traditional game loop but instead to conceive of adding and disabling event handlers to different components of the game depending on our current progression. the progression consists of
     round() {
+        this.player.wager = prompt("pick wager", (this.player.balance * .1).toString());
         this.deck = new Deck();
         this.dealHands();
         this.startPlayerTurn();
-        // dealerPlays();
-        // displayBusts();
-        // payout();
+    },
+    addCardPlayer(i) {
+        let newCard;
+        const playerHandNode = document.querySelector('#playerHand');
+        newCard = document.createElement('div');
+        newCard.className = 'card';
+        this.player.hand.addCard(this.deck.hit(), this);
+        newCard.textContent = this.player.hand[i];
+        playerHandNode.appendChild(newCard);
+    },
+    // I need to bring the logic together under one function later
+    addCardDealer(i) {
+        let newCard;
+        const dealerHandNode = document.querySelector('#dealerHand');
+        newCard = document.createElement('div');
+        newCard.className = 'card';
+        this.dealer.hand.addCard(this.deck.hit(), this);
+        newCard.textContent = this.dealer.hand[i];
+        dealerHandNode.appendChild(newCard);
     },
     dealHands() {
         // deal the first 2 cards
         // this.player.handthis.hit(), this.hit());
         //dom manip
-        const playerHandNode = document.querySelector('#playerHand');
-        let newCard;
-        players.foreach(player => {
+        this.playerList.forEach(player => {
             for (let i = 0; i < 2; i++) {
-                newCard = document.createElement('div');
-                this.player.hand.addCard(this.hit());
-                newCard.innerText = this.player.hand[i];
-                playerHandNode.appendChild(newCard);
+                this.addCardPlayer(i);
             }
         });
+        for (let i = 0; i < 2; i++) {
+            this.addCardDealer(i);
+        }
+        // this.dealer.upCard = this.dealer.hand[0];
+        // this.dealer.holeCard = this.dealer.hand[1];
+        this.dealer.hand.startingHand(this.dealer.hand[0], this.dealer.hand[1]);
     },
-
 };
 
 //game.player.hand
