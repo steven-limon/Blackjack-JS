@@ -47,7 +47,7 @@ class Hand {
             newCard.style.background = 'black';
         newCard.textContent = card.rank + ' ' + card.suit;
         this.cards.push(card);
-        handNode.appendChild(newCard);
+        this.handNode.appendChild(newCard);
     }
     total() {
         let total = 0;
@@ -81,7 +81,7 @@ class DealerHand extends Hand {
     }
     addCard(card) {
         if (this.cards.length > 1)
-            super.addcard(card, true);
+            super.addCard(card, true);
         else
             super.addCard(card);
         if (this.cards.length === 2) {
@@ -113,7 +113,7 @@ class Dealer {
     // dealer logic is fixed. it will draw until it hits a (hitsUntil) which is usually 17. A variant of blackjack has the dealer draw on a soft 17 which I will figure out later
     reset() {
         this.deck = new Deck();
-        this.dealer.hand = new DealerHand(document.querySelector('#dealerHand'));
+        this.hand = new DealerHand(document.querySelector('#dealerHand'));
     }
     plays(deck) {
         while (this.hand.total() < this.hitsUntil)
@@ -121,23 +121,24 @@ class Dealer {
     }
     deals() {
         // this.deck.pop();
-        this.deck.hit();
+        return this.deck.hit();
     }
-    dealHands() {
+    dealHands(playerList) {
         // deal the first 2 cards
         // this.player.handthis.hit(), this.hit());
         //dom manip
-        this.playerList.forEach(player => {
+        playerList.forEach(player => {
             for (let i = 0; i < 2; i++) {
-                this.addCardPlayer(i);
+                //this.addCardPlayer(i);
+                player.hand.addCard(this.deals());
             }
         });
         for (let i = 0; i < 2; i++) {
-            this.addCardDealer(i);
+            this.hand.addCard(this.deals());
         }
         // this.dealer.upCard = this.dealer.hand[0];
         // this.dealer.holeCard = this.dealer.hand[1];
-        this.dealer.hand.startingHand(this.dealer.hand[0], this.dealer.hand[1]);
+        // this.dealer.hand.startingHand(this.dealer.hand[0], this.dealer.hand[1]);
     }
     endHand() {
         this.hand.clearHand();
@@ -191,13 +192,13 @@ const game = {
         this.dealer.endHand();
     },
     setupControls() {
-        // i call player.addCard() in the hitBtn and in the doubleBtn.
+        // i call player.hand.addCard() in the hitBtn and in the doubleBtn.
         // the logic i want to use is a single function that creates the card objects in js, makes div elements, modifies the textContent of those div elements using the card object's text (for now maybe ill use an image file of a nice looking card texture a little bit later). the div gets added to the hand div for the player and the dealer. when the round ends, we can simply clear out all the nodes that we added as children to the hand divs and clear out the hand variable with a new hand being created (the old hand should be garbage collcetd since there wont be other references, i have yet to write that code btw, i did clear out the children node already
         const hitBtn = document.querySelector('#hit');
         const doubleBtn = document.querySelector('#double');
         const standBtn = document.querySelector('#stand');
         hitBtn.addEventListener('click', () => {
-            this.player.addCard(this.dealer.deals());
+            this.player.hand.addCard(this.dealer.deals());
         });
         standBtn.addEventListener('click', () => {
             this.toggleControls('off');
@@ -209,7 +210,7 @@ const game = {
             this.endRound();
         });
         doubleBtn.addEventListener('click', () => {
-            this.player.addCard(this.dealer.deals());
+            this.player.hand.addCard(this.dealer.deals());
             this.toggleControls('off');
             this.player.balance -= this.player.wager;
             this.player.wager *= 2;
@@ -243,7 +244,7 @@ const game = {
         // this.deck = new Deck();
         // this.dealer.deck = new Deck();
         this.dealer.reset();
-        this.dealer.dealHands();
+        this.dealer.dealHands(this.playerList);
         this.startPlayerTurn();
     }
 };
