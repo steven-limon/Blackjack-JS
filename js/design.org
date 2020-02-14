@@ -1,0 +1,19 @@
+* game phases
+** the betting phase(a player puts down the minimum number of chips for the table. maybe have a toggle where they put in as big a hand as their last bet)
+** the players play in order (if there are bots then there must be an order of players getting a chance to hit from the same shoe/deck. for a single player game theres no need to visit any other player besides the user)
+*** A player's turn consists of allowing them to take several actions, and all of this is contextual, if the player receives blackjack their turn immediately ends and they will win unless the dealer shows a blackjack (the dealer must show a blackjack as soon as his play starts unless the surrender variant is active). Otherwise the player has the following actions
+**** Hit 
+     hits can continue until bust
+**** stand
+     the player accepts their current hand and their play ends
+**** double down
+     player must have enough in their balance to double their bet, they receive one card, their play ends
+**** surrender
+     a variant that allows them to give up their hand if the dealer has no blackjack and they will receive half their bet back
+** dealer phase
+   The dealer is not making any ai decisions or anything, they simply draw until their standUnil is reached.
+** the payout
+   consideration: Payout sidebets after the dealer phase? I dont know in a normal game when insurance is paid out and I probably am not going to implement any other sidebets for this current iteration of the project
+   this phase needs to look at every players hand to determine what occurs. nothing happens when the player busts (hand above 21). if they score above the dealers hand they get paid out otherwise like a bust they receive nothing
+   
+   The way these phases will work it is not to wait in a loop in any one of these functions. instead on page load i will call init to start the first phase (betting). the init will also serve to store the balance the player entered when they started and the minimum they set for the table. the init will set event handlers on the buttons and when the next phase is called( betting) the end of that function will disable those buttons with whatever property on buttons disables them which i did see exists eralier. the other option would have been to remove the event handler but that seems inefficient compared to using some sort of attribute setting. the same betting phase occurs for every player. if i have a chance to have bots ill just have them bet according to a simple play table. it would also be nice if the bot sitting on the third base display proper etiquette (not hitting when the dealer shows a 10/face). Once the player stands they take no more action until the next betting phase. so the difficult part is actually setting some timers to prevent all the subsequent action from just immediately happening. we want as the player to see other players make their bets/side-bets and continue to hit so we can see what cards are coming up if its faceup hitting which i cant rceall if thats a thing or not. 

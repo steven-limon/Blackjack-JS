@@ -18,7 +18,7 @@ class Deck {
         const suits = ['diamonds', 'clubs', 'hearts', 'spades'];
         for (const rank of ranks) {
             for (const suit of suits) {
-                if (this.rank == 'K' || this.rank == 'Q' || this.rank == 'J')
+                if (rank == 'K' || rank == 'Q' || rank == 'J')
                     this.cards.push(new Card(rank, suit, 10));
                 else if (this.rank == 'A')
                     this.cards.push(new Card(rank, suit, 'ace'));
@@ -43,8 +43,10 @@ class Hand {
         let newCard;
         newCard = document.createElement('div');
         newCard.className = 'card';
-        if (hide === true)
-            newCard.style.background = 'black';
+        if (hide === true) {
+            newCard.style.backgroundColor = 'black';
+            newCard.id = 'hole';
+        }
         newCard.textContent = card.rank + ' ' + card.suit;
         this.cards.push(card);
         this.handNode.appendChild(newCard);
@@ -52,7 +54,7 @@ class Hand {
     total() {
         let total = 0;
         let aces = 0;
-        for (card of this.cards) {
+        for (let card of this.cards) {
             if (typeof(card.value) === 'string' && card.value === 'ace')
                 aces++;
             else
@@ -67,8 +69,8 @@ class Hand {
         return total;
     }
     clear() {
-        while (handNode.firstChild)
-            handNode.removeChild(handNode.firstChild);
+        while (this.handNode.firstChild)
+            this.handNode.removeChild(this.handNode.firstChild);
     }
 }
 class DealerHand extends Hand {
@@ -80,13 +82,15 @@ class DealerHand extends Hand {
         this.holeCard = holeCard;
     }
     addCard(card) {
-        if (this.cards.length > 1)
+        if (this.cards.length === 0)
             super.addCard(card, true);
         else
             super.addCard(card);
+        /* broken
         if (this.cards.length === 2) {
-            startingHand(this.super.cards[0], this.super.cards[1]);
+            this.startingHand(super.cards[0], super.cards[1]);
         }
+        */
     }
 }
 class Player {
@@ -113,9 +117,12 @@ class Dealer {
     // dealer logic is fixed. it will draw until it hits a (hitsUntil) which is usually 17. A variant of blackjack has the dealer draw on a soft 17 which I will figure out later
     reset() {
         this.deck = new Deck();
+        this.deck.shuffle();
         this.hand = new DealerHand(document.querySelector('#dealerHand'));
     }
     plays(deck) {
+        let holeCardEl = document.querySelector('#hole');
+        holeCardEl.style.backgroundColor = 'white';
         while (this.hand.total() < this.hitsUntil)
             this.hand.addCard(this.deck.hit());
     }
@@ -141,7 +148,7 @@ class Dealer {
         // this.dealer.hand.startingHand(this.dealer.hand[0], this.dealer.hand[1]);
     }
     endHand() {
-        this.hand.clearHand();
+        this.hand.clear();
         // weirdly enough there is no need to explicitly clear out the deck and hand since on reset we will replace those values, just need to clear the nodes that held the card info
         // while (playerHandNode.firstChild)
         //     playerHandNode.removeChild(playerHandNode.firstChild);
@@ -172,41 +179,55 @@ const game = {
     push() {
         this.player.balance += this.player.wager;
     },
+    result: "",
     payout() {
-        if (this.dealer.hand.total() == 21 && this.player.hand.total() != 21)
+        if (this.dealer.hand.cards[0] + this.dealer.hand.cards[1] == 21 && this.player.hand.total() != 21) {
+            this.result = "Dealer has a blackjack, player loses";
             return;
-        else if (this.dealer.hand.total() == 21 && this.player.hand.total() == 21)
+        }
+        else if ((this.dealer.hand.cards[0] + this.dealer.hand.cards[1]) == 21 == 21 && (this.player.hand.cards[0] + this.player.hand.cards[1]) == 21) {
             // this.player.push();
+            this.result = "Dealer and player both show blackjack. Push.";
             this.push();
-        if (this.player.hand.total() == 21)
+        }
+        if (this.player.hand.total() == 21) {
             this.player.balance += 1.5 * this.player.wager;
-        else if (this.player.hand.total() > this.dealer.hand.total())
+            this.result = "Player wins by blackjack";
+        }
+        else if (this.player.hand.total() > this.dealer.hand.total()) {
             this.player.balance += 2 * this.player.wager;
+            this.result = "Player wins";
+        }
+        // order matters for the next 2 conditions
+        else if (this.player.hand.total() > 21)
+            this.result = "Player busts";
+        else if (this.dealer.hand.total() > 21) {
+            this.player.balance += 2 * this.player.wager;
+            this.result = "Dealer busts. Player wins";
+        }
+        else {
+            this.result = "Player Loses";
+        }
     },
     endRound() {
         // this.dealer.plays(this.deck);
         this.dealer.plays();
         this.payout();
-
-        this.player.endHand();
-        this.dealer.endHand();
+        game.showStats();
     },
     setupControls() {
-        // i call player.hand.addCard() in the hitBtn and in the doubleBtn.
-        // the logic i want to use is a single function that creates the card objects in js, makes div elements, modifies the textContent of those div elements using the card object's text (for now maybe ill use an image file of a nice looking card texture a little bit later). the div gets added to the hand div for the player and the dealer. when the round ends, we can simply clear out all the nodes that we added as children to the hand divs and clear out the hand variable with a new hand being created (the old hand should be garbage collcetd since there wont be other references, i have yet to write that code btw, i did clear out the children node already
         const hitBtn = document.querySelector('#hit');
         const doubleBtn = document.querySelector('#double');
         const standBtn = document.querySelector('#stand');
         hitBtn.addEventListener('click', () => {
             this.player.hand.addCard(this.dealer.deals());
+            if (this.player.hand.total() > 21) {
+                this.toggleControls('off');
+                this.endRound();
+            }
         });
         standBtn.addEventListener('click', () => {
             this.toggleControls('off');
-            // for bots I need to check if the type of a player is a human or bot. when iterating through the player list controls are enabled for the duration of the player turn and some external logic will take care of either proceeding to the dealers play or other bots
-            // this.nextPlayer();
-            // dealerPlays();
-            // displayBusts();
-            // add some timers so the game doesnt just instantly end
             this.endRound();
         });
         doubleBtn.addEventListener('click', () => {
@@ -215,7 +236,13 @@ const game = {
             this.player.balance -= this.player.wager;
             this.player.wager *= 2;
             this.endRound();
-            // this.player.doubleDown();
+        });
+
+        const againBtn = document.querySelector('#again');
+        againBtn.addEventListener('click', () => {
+            this.player.endHand();
+            this.dealer.endHand();
+            this.round();
         });
     },
     toggleControls(choice) {
@@ -231,6 +258,9 @@ const game = {
         hitBtn.disabled = state;
         doubleBtn.disabled = state;
         standBtn.disabled = state;
+
+        const againBtn = document.querySelector('#again');
+        againBtn.disabled = !state;
     },
     startPlayerTurn() {
         this.player.stand = false;
@@ -238,6 +268,7 @@ const game = {
     },
     // I need to get rid of the game loop the way I have it since this will cause the browser to hang. THe correct way to do a js game with distinct phases is to not have a traditional game loop but instead to conceive of adding and disabling event handlers to different components of the game depending on our current progression. the progression consists of
     round() {
+        //this.result = "";
         this.player.wager = prompt("pick wager", (this.player.balance * .1).toString());
         this.player.balance -= this.player.wager;
         this.player.reset();
@@ -246,6 +277,10 @@ const game = {
         this.dealer.reset();
         this.dealer.dealHands(this.playerList);
         this.startPlayerTurn();
+    },
+    showStats(){
+        let info = document.querySelector('#info');
+        info.innerHTML = `<p>balance: ${ this.player.balance }</p><p>result: ${ this.result }</p>`;
     }
 };
 
