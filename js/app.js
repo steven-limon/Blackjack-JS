@@ -5,25 +5,28 @@ Array.prototype.shuffle = function () {
     }
 };
 class Card {
-    constructor(rank, suit, value) {
+    constructor(rank, suit, value, link, ace = false) {
         this.rank = rank;
         this.suit = suit;
         this.value = value;
+        this.link = link;
+        this.ace = ace;
     }
 }
 class Deck {
     constructor() {
         this.cards = [];
         const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'K', 'Q', 'J', 'A'];
-        const suits = ['diamonds', 'clubs', 'hearts', 'spades'];
+        const suits = ['D', 'C', 'H', 'S'];
         for (const rank of ranks) {
             for (const suit of suits) {
+                let link = 'imgs/' + rank + suit + '.png';
                 if (rank == 'K' || rank == 'Q' || rank == 'J')
-                    this.cards.push(new Card(rank, suit, 10));
-                else if (this.rank == 'A')
-                    this.cards.push(new Card(rank, suit, 'ace'));
+                    this.cards.push(new Card(rank, suit, 10, link));
+                else if (rank == 'A')
+                    this.cards.push(new Card(rank, suit, 'ace', link, true));
                 else
-                    this.cards.push(new Card(rank, suit, Number(rank)));
+                    this.cards.push(new Card(rank, suit, Number(rank), link));
             }
         }
     }
@@ -41,21 +44,35 @@ class Hand {
     }
     addCard(card, hide = false) {
         let newCard;
+        let newImg = document.createElement('img');
+        newImg.src = card.link;
         newCard = document.createElement('div');
         newCard.className = 'card';
+
         if (hide === true) {
-            newCard.style.backgroundColor = 'black';
+            // newCard.style.backgroundColor = 'black';
             newCard.id = 'hole';
+            newImg.src = 'imgs/blue_back.png';
         }
-        newCard.textContent = card.rank + ' ' + card.suit;
+        // newCard.textContent = card.rank + ' ' + card.suit;
         this.cards.push(card);
         this.handNode.appendChild(newCard);
+        newCard.appendChild(newImg);
+    }
+    checkBlackJack() {
+        if ((this.cards[0].ace && this.cards[1].value === 10) || (this.cards[1].ace && this.cards[0].value === 10))
+            return true;
+        else if ((!this.cards[0].ace || !this.cards[1].ace) && ((this.cards[0].value + this.cards[1].value) === 21) || (this.cards[0].value + this.cards[1].value) === 21)
+            return true;
+        else
+            return false;
     }
     total() {
         let total = 0;
         let aces = 0;
         for (let card of this.cards) {
-            if (typeof(card.value) === 'string' && card.value === 'ace')
+            // if (typeof(card.value) === 'string' && card.value === 'ace')
+            if (card.ace)
                 aces++;
             else
                 total += card.value;
@@ -122,7 +139,8 @@ class Dealer {
     }
     plays(deck) {
         let holeCardEl = document.querySelector('#hole');
-        holeCardEl.style.backgroundColor = 'white';
+        holeCardEl.firstChild.src = this.hand.cards[0].link;
+        // holeCardEl.style.backgroundColor = 'white';
         while (this.hand.total() < this.hitsUntil)
             this.hand.addCard(this.deck.hit());
     }
@@ -181,29 +199,29 @@ const game = {
     },
     result: "",
     payout() {
-        if (this.dealer.hand.cards[0] + this.dealer.hand.cards[1] == 21 && this.player.hand.total() != 21) {
-            this.result = "Dealer has a blackjack, player loses";
-            return;
-        }
-        else if ((this.dealer.hand.cards[0] + this.dealer.hand.cards[1]) == 21 == 21 && (this.player.hand.cards[0] + this.player.hand.cards[1]) == 21) {
-            // this.player.push();
+        if (this.dealer.hand.checkBlackJack() && this.player.hand.checkBlackJack()){
             this.result = "Dealer and player both show blackjack. Push.";
             this.push();
         }
-        if (this.player.hand.total() == 21) {
+        else if (this.dealer.hand.checkBlackJack() && !this.player.hand.checkBlackJack())
+            this.result = "Dealer has a blackjack, player loses";
+        else if (this.player.hand.checkBlackJack() && !this.dealer.hand.checkBlackJack()) {
             this.player.balance += 1.5 * this.player.wager;
             this.result = "Player wins by blackjack";
+        }
+        else if (this.player.hand.total() > 21)
+            this.result = "Player busts";
+        else if (this.dealer.hand.total() > 21) {
+            this.result = "Dealer busts. Player wins";
+            this.player.balance += 2 * this.player.wager;
+        }
+        else if (this.player.hand.total() == this.dealer.hand.total()) {
+            this.result = "Push";
+            this.push();
         }
         else if (this.player.hand.total() > this.dealer.hand.total()) {
             this.player.balance += 2 * this.player.wager;
             this.result = "Player wins";
-        }
-        // order matters for the next 2 conditions
-        else if (this.player.hand.total() > 21)
-            this.result = "Player busts";
-        else if (this.dealer.hand.total() > 21) {
-            this.player.balance += 2 * this.player.wager;
-            this.result = "Dealer busts. Player wins";
         }
         else {
             this.result = "Player Loses";
